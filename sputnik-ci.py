@@ -58,7 +58,7 @@ def download_files_and_run_sputnik():
             checkstyle_url = "http://sputnik.touk.pl/conf/" + get_env("TRAVIS_REPO_SLUG") + "/checkstyle?key=" + get_env("api_key")
             download_file(checkstyle_url, "checkstyle.xml")
 
-        sputnik_jar_url = "repo1.maven.org/maven2/pl/touk/sputnik/1.6.0/sputnik-1.6.0-all.jar"
+        sputnik_jar_url = "http://repo1.maven.org/maven2/pl/touk/sputnik/1.6.0/sputnik-1.6.0-all.jar"
         download_file(sputnik_jar_url, "sputnik.jar")
 
         subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', get_env("TRAVIS_PULL_REQUEST")])
