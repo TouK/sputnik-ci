@@ -2,6 +2,7 @@
 
 import logging, os, subprocess, sys, urllib, zipfile
 
+
 def configure_logger():
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
@@ -37,13 +38,15 @@ def is_travis_ci():
         return True
     else:
         logging.warn("Stop travis continuous integration. Check evn variables CI: " + get_env("CI")
-                     + ", TRAVIS: " +  get_env("TRAVIS") + ", TRAVIS_PULL_REQUEST: " + get_env("TRAVIS_PULL_REQUEST"))
+                     + ", TRAVIS: " + get_env("TRAVIS") + ", TRAVIS_PULL_REQUEST: " + get_env("TRAVIS_PULL_REQUEST"))
         return False
+
 
 def unzip(zip):
     zip_ref = zipfile.ZipFile(zip, 'r')
     zip_ref.extractall(".")
     zip_ref.close()
+
 
 def download_file(url, file_name):
     logging.info("Downloading " + file_name)
@@ -60,7 +63,7 @@ def download_files_and_run_sputnik():
             download_file(configs_url, "configs.zip")
             unzip("configs.zip")
 
-        sputnik_jar_url = "http://repo1.maven.org/maven2/pl/touk/sputnik/1.6.0/sputnik-1.6.0-all.jar"
+        sputnik_jar_url = "http://repo1.maven.org/maven2/pl/`touk/sputnik/1.6.0/sputnik-1.6.0-all.jar"
         download_file(sputnik_jar_url, "sputnik.jar")
 
         subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', get_env("TRAVIS_PULL_REQUEST")])
