@@ -66,7 +66,7 @@ def download_files_and_run_sputnik():
         sputnik_jar_url = "http://repo1.maven.org/maven2/pl/touk/sputnik/1.6.1/sputnik-1.6.1-all.jar"
         download_file(sputnik_jar_url, "sputnik.jar")
 
-        subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', get_env("TRAVIS_PULL_REQUEST")])
+        subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', get_env("TRAVIS_PULL_REQUEST"), '--apiKey', get_env("api_key")])
 
 
 def sputnik_ci():
