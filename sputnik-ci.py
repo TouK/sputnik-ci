@@ -115,8 +115,7 @@ def download_files_and_run_sputnik(ci_variables):
         logging.debug('Sputnik jar url: ' + sputnik_jar_url)
         download_file(sputnik_jar_url, "sputnik.jar")
 
-        subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId',
-                         ci_variables.pull_request_number, '--apiKey', ci_variables.api_key])
+        subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', ci_variables.pull_request_number, '--apiKey', ci_variables.api_key])
 
 def sputnik_ci():
     configure_logger()
