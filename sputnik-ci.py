@@ -27,7 +27,7 @@ class CIVariables(object):
 
     def is_set_every_required_env(self):
         return self.ci_service_name is not None and self.ci is not None and self.ci_name is not None \
-               and self.pull_request_number is not None and self.repo_slug is not None
+               and self.pull_request_number is not None and self.repo_slug is not None and self.api_key is not None
 
     def is_pull_request_initiated(self):
         pull_request_initiated = self.ci == 'true' and self.ci_name == 'true' and self.pull_request_number != "false"
