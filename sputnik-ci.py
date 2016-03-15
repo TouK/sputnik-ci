@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import logging, os, subprocess, sys, urllib, zipfile
+import logging, os, subprocess, sys, urllib, urllib2, zipfile
 
 sputnik_version='1.6.2'
 
@@ -103,12 +103,26 @@ def download_file(url, file_name):
         logging.error("Problem while downloading " + file_name + " from " + url)
 
 
+def is_api_key_correct(ci_variables):
+    check_key_request = urllib2.Request("http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/has-api-key?key=" + ci_variables.api_key)
+    code = None
+    try:
+        response = urllib2.urlopen(check_key_request)
+        code = response.code
+    except urllib2.HTTPError as e:
+        code = e.code
+    return code == 200
+
+
 def download_files_and_run_sputnik(ci_variables):
     if ci_variables.is_pull_request_initiated():
-        if ci_variables.api_key:
-            configs_url = "http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/configs?key=" + ci_variables.api_key
-            download_file(configs_url, "configs.zip")
-            unzip("configs.zip")
+        if not is_api_key_correct(ci_variables):
+            logging.error("API key is incorrect. Please make sure that you passed correct key to CI settings.")
+            return
+
+        configs_url = "http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/configs?key=" + ci_variables.api_key
+        download_file(configs_url, "configs.zip")
+        unzip("configs.zip")
 
         global sputnik_version
         sputnik_jar_url = "http://repo1.maven.org/maven2/pl/touk/sputnik/" + sputnik_version + "/sputnik-" + sputnik_version + "-all.jar"
@@ -116,6 +130,7 @@ def download_files_and_run_sputnik(ci_variables):
         download_file(sputnik_jar_url, "sputnik.jar")
 
         subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', ci_variables.pull_request_number, '--apiKey', ci_variables.api_key])
+
 
 def sputnik_ci():
     configure_logger()
