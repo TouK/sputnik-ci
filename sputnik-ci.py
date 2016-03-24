@@ -2,7 +2,7 @@
 
 import logging, os, subprocess, sys, urllib, urllib2, zipfile
 
-sputnik_version='1.6.2'
+sputnik_version='1.6.3'
 
 
 def configure_logger():
@@ -17,17 +17,18 @@ def configure_logger():
 
 
 class CIVariables(object):
-    def __init__(self, ci_service_name=None, ci=None, ci_name=None, pull_request_number=None, repo_slug=None, api_key=None):
+    def __init__(self, ci_service_name=None, ci=None, ci_name=None, pull_request_number=None, repo_slug=None, api_key=None, build_id=None):
         self.ci_service_name = ci_service_name
         self.ci = ci
         self.ci_name = ci_name
         self.pull_request_number = pull_request_number
         self.repo_slug = repo_slug
         self.api_key = api_key
+        self.build_id = build_id
 
     def is_set_every_required_env(self):
         return self.ci_service_name is not None and self.ci is not None and self.ci_name is not None \
-               and self.pull_request_number is not None and self.repo_slug is not None and self.api_key is not None
+               and self.pull_request_number is not None and self.repo_slug is not None and (self.api_key is not None or self.build_id is not None)
 
     def is_pull_request_initiated(self):
         pull_request_initiated = self.ci == 'true' and self.ci_name == 'true' and self.pull_request_number != "false"
@@ -68,6 +69,7 @@ def init_travis_variables(ci_variables):
     ci_variables.ci_name = get_env("TRAVIS")
     ci_variables.pull_request_number = get_env("TRAVIS_PULL_REQUEST")
     ci_variables.repo_slug = get_env("TRAVIS_REPO_SLUG")
+    ci_variables.build_id = get_env("TRAVIS_BUILD_ID")
 
 
 def init_circleci_variables(ci_variables):
@@ -75,6 +77,7 @@ def init_circleci_variables(ci_variables):
     ci_variables.ci_name = get_env("CIRCLECI")
     ci_variables.pull_request_number = get_env("CIRCLE_PR_NUMBER")
     ci_variables.repo_slug = get_env("CIRCLE_PROJECT_USERNAME") + '/' + get_env("CIRCLE_PROJECT_REPONAME")
+    ci_variables.build_id = get_env("CIRCLE_BUILD_NUM")
 
 
 def init_variables():
@@ -103,8 +106,15 @@ def download_file(url, file_name):
         logging.error("Problem while downloading " + file_name + " from " + url)
 
 
-def is_api_key_correct(ci_variables):
-    check_key_request = urllib2.Request("http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/has-api-key?key=" + ci_variables.api_key)
+def query_params(ci_variables):
+    query_vars = {}
+    query_vars['key'] = ci_variables.api_key
+    query_vars['build_id'] = ci_variables.build_id
+    return urllib.urlencode(dict((k, v) for k,v in query_vars.iteritems() if v is not None))
+
+
+def are_credentials_correct(ci_variables):
+    check_key_request = urllib2.Request("http://sputnik.touk.pl/api/github/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
     code = None
     try:
         response = urllib2.urlopen(check_key_request)
@@ -116,11 +126,11 @@ def is_api_key_correct(ci_variables):
 
 def download_files_and_run_sputnik(ci_variables):
     if ci_variables.is_pull_request_initiated():
-        if not is_api_key_correct(ci_variables):
-            logging.error("API key is incorrect. Please make sure that you passed correct key to CI settings.")
+        if not are_credentials_correct(ci_variables):
+            logging.error("API key or build id is incorrect. Please make sure that you passed correct value to CI settings.")
             return
 
-        configs_url = "http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/configs?key=" + ci_variables.api_key
+        configs_url = "http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/configs?" + query_params(ci_variables)
         download_file(configs_url, "configs.zip")
         unzip("configs.zip")
 
@@ -129,7 +139,12 @@ def download_files_and_run_sputnik(ci_variables):
         logging.debug('Sputnik jar url: ' + sputnik_jar_url)
         download_file(sputnik_jar_url, "sputnik.jar")
 
-        subprocess.call(['java', '-jar', 'sputnik.jar', '--conf', 'sputnik.properties', '--pullRequestId', ci_variables.pull_request_number, '--apiKey', ci_variables.api_key])
+        sputnik_params = ['--conf', 'sputnik.properties', '--pullRequestId', ci_variables.pull_request_number]
+        if ci_variables.api_key is not None:
+            sputnik_params = sputnik_params + ['--apiKey', ci_variables.api_key]
+        if ci_variables.build_id is not None:
+            sputnik_params = sputnik_params + ['--buildId', ci_variables.build_id]
+        subprocess.call(['java', '-jar', 'sputnik.jar'] + sputnik_params)
 
 
 def sputnik_ci():
