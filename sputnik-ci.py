@@ -3,7 +3,7 @@
 import logging, os, subprocess, sys, urllib, urllib2, zipfile
 
 sputnik_version='1.6.3'
-
+sputnik_base_url='https://sputnik.ci/'
 
 def configure_logger():
     root = logging.getLogger()
@@ -33,7 +33,7 @@ class CIVariables(object):
     def is_pull_request_initiated(self):
         pull_request_initiated = self.ci == 'true' and self.ci_name == 'true' and self.pull_request_number != "false"
         if not pull_request_initiated:
-            logging.info('Stop processing as pull request has not been initiated')
+            logging.error('Stop processing as pull request has not been initiated')
         return pull_request_initiated
 
 
@@ -72,11 +72,24 @@ def init_travis_variables(ci_variables):
     ci_variables.build_id = get_env("TRAVIS_BUILD_ID")
 
 
+def get_circleci_pr_number(repo_slug):
+    pr_from_fork = get_env("CIRCLE_PR_NUMBER")
+    pr_number = "-1"
+    if pr_from_fork is None:
+        pull_requests_str = get_env("CI_PULL_REQUESTS")
+        pull_request_url_prefix = "https://github.com/" + repo_slug + "/pull/"
+        pull_requests = list(map(lambda pr: int(pr[len(pull_request_url_prefix):]), pull_requests_str.split(",")))
+        pr_number = max(pull_requests)
+    else:
+        pr_number = pr_from_fork
+    return pr_number
+
+
 def init_circleci_variables(ci_variables):
     ci_variables.ci = get_env("CI")
     ci_variables.ci_name = get_env("CIRCLECI")
-    ci_variables.pull_request_number = get_env("CIRCLE_PR_NUMBER")
     ci_variables.repo_slug = get_env("CIRCLE_PROJECT_USERNAME") + '/' + get_env("CIRCLE_PROJECT_REPONAME")
+    ci_variables.pull_request_number = get_circleci_pr_number(ci_variables.repo_slug)
     ci_variables.build_id = get_env("CIRCLE_BUILD_NUM")
 
 
@@ -114,7 +127,7 @@ def query_params(ci_variables):
 
 
 def are_credentials_correct(ci_variables):
-    check_key_request = urllib2.Request("http://sputnik.touk.pl/api/github/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
+    check_key_request = urllib2.Request(sputnik_base_url + "api/github/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
     code = None
     try:
         response = urllib2.urlopen(check_key_request)
@@ -130,7 +143,7 @@ def download_files_and_run_sputnik(ci_variables):
             logging.error("API key or build id is incorrect. Please make sure that you passed correct value to CI settings.")
             return
 
-        configs_url = "http://sputnik.touk.pl/conf/" + ci_variables.repo_slug + "/configs?" + query_params(ci_variables)
+        configs_url = sputnik_base_url + "conf/" + ci_variables.repo_slug + "/configs?" + query_params(ci_variables)
         download_file(configs_url, "configs.zip")
         unzip("configs.zip")
 
@@ -139,7 +152,7 @@ def download_files_and_run_sputnik(ci_variables):
         logging.debug('Sputnik jar url: ' + sputnik_jar_url)
         download_file(sputnik_jar_url, "sputnik.jar")
 
-        sputnik_params = ['--conf', 'sputnik.properties', '--pullRequestId', ci_variables.pull_request_number]
+        sputnik_params = ['--conf', 'sputnik.properties', '--pullRequestId', str(ci_variables.pull_request_number)]
         if ci_variables.api_key is not None:
             sputnik_params = sputnik_params + ['--apiKey', ci_variables.api_key]
         if ci_variables.build_id is not None:
