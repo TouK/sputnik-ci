@@ -152,7 +152,7 @@ def download_files_and_run_sputnik(ci_variables):
         logging.debug('Sputnik jar url: ' + sputnik_jar_url)
         download_file(sputnik_jar_url, "sputnik.jar")
 
-        sputnik_params = ['--conf', 'sputnik.properties', '--pullRequestId', ci_variables.pull_request_number]
+        sputnik_params = ['--conf', 'sputnik.properties', '--pullRequestId', str(ci_variables.pull_request_number)]
         if ci_variables.api_key is not None:
             sputnik_params = sputnik_params + ['--apiKey', ci_variables.api_key]
         if ci_variables.build_id is not None:
