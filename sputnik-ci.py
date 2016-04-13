@@ -101,7 +101,7 @@ def init_variables():
     elif ci_variables.ci_service_name == 'CIRCLECI':
         init_circleci_variables(ci_variables)
 
-    ci_variables.api_key = get_env("api_key")
+    ci_variables.api_key = get_env("sputnik_api_key")
     return ci_variables
 
 
