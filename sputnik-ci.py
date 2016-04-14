@@ -74,12 +74,13 @@ def init_travis_variables(ci_variables):
 
 def get_circleci_pr_number(repo_slug):
     pr_from_fork = get_env("CIRCLE_PR_NUMBER")
-    pr_number = "-1"
+    pr_number = None
     if pr_from_fork is None:
         pull_requests_str = get_env("CI_PULL_REQUESTS")
-        pull_request_url_prefix = "https://github.com/" + repo_slug + "/pull/"
-        pull_requests = list(map(lambda pr: int(pr[len(pull_request_url_prefix):]), pull_requests_str.split(",")))
-        pr_number = max(pull_requests)
+        if pull_requests_str is not None:
+            pull_request_url_prefix = "https://github.com/" + repo_slug + "/pull/"
+            pull_requests = list(map(lambda pr: int(pr[len(pull_request_url_prefix):]), pull_requests_str.split(",")))
+            pr_number = max(pull_requests)
     else:
         pr_number = pr_from_fork
     return pr_number
@@ -166,6 +167,8 @@ def sputnik_ci():
 
     if ci_variables.is_set_every_required_env():
         download_files_and_run_sputnik(ci_variables)
+    else:
+        logging.info("Env variables needed to run not set. Aborting.")
 
 
 sputnik_ci()
