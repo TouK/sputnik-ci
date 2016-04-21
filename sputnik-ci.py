@@ -2,7 +2,7 @@
 
 import logging, os, subprocess, sys, urllib, urllib2, zipfile
 
-sputnik_version='1.7.1'
+sputnik_version='1.7.0'
 sputnik_base_url='https://sputnik.ci/'
 
 def configure_logger():
