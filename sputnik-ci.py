@@ -1,7 +1,16 @@
 #!/usr/bin/python
 
-import logging, os, subprocess, sys, urllib, urllib2, zipfile
+import logging, os, subprocess, sys, zipfile
+import platform
 
+try:
+    from urllib.request import Request, urlopen, urlretrieve
+    from urllib.error import HTTPError
+    from urllib.parse import urlencode 
+except ImportError:
+    from urllib2 import Request, urlopen, HTTPError
+    from urllib import urlencode, urlretrieve
+    
 sputnik_version='1.7.2'
 sputnik_base_url='https://sputnik.ci/'
 
@@ -115,7 +124,7 @@ def unzip(zip):
 def download_file(url, file_name):
     logging.info("Downloading " + file_name)
     try:
-        urllib.urlretrieve(url, filename=file_name)
+        urlretrieve(url, filename=file_name)
     except Exception:
         logging.error("Problem while downloading " + file_name + " from " + url)
 
@@ -124,16 +133,16 @@ def query_params(ci_variables):
     query_vars = {}
     query_vars['key'] = ci_variables.api_key
     query_vars['build_id'] = ci_variables.build_id
-    return urllib.urlencode(dict((k, v) for k,v in query_vars.iteritems() if v is not None))
+    return urlencode(dict((k, v) for k,v in query_vars.items() if v is not None))
 
 
 def are_credentials_correct(ci_variables):
-    check_key_request = urllib2.Request(sputnik_base_url + "api/github/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
+    check_key_request = Request(sputnik_base_url + "api/github/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
     code = None
     try:
-        response = urllib2.urlopen(check_key_request)
+        response = urlopen(check_key_request)
         code = response.code
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         code = e.code
     return code == 200
 
@@ -163,6 +172,19 @@ def download_files_and_run_sputnik(ci_variables):
 
 def sputnik_ci():
     configure_logger()
+    
+    print("""
+          _____             _         _ _    
+         / ____|           | |       (_) |   
+        | (___  _ __  _   _| |_ _ __  _| | __
+         \___ \| '_ \| | | | __| '_ \| | |/ /
+         ____) | |_) | |_| | |_| | | | |   < 
+        |_____/| .__/ \__,_|\__|_| |_|_|_|\_\\
+               | |                  
+               |_|
+               """)        
+    print("Running on Python " + platform.python_version() + "\n")
+    
     ci_variables = init_variables()
 
     if ci_variables.is_set_every_required_env():
