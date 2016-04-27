@@ -4,7 +4,8 @@ import logging, os, subprocess, sys, zipfile
 import platform
 
 try:
-    from urllib.request import Request, urlopen, HTTPError, urlretrieve
+    from urllib.request import Request, urlopen, urlretrieve
+    from urllib.error import HTTPError
     from urllib.parse import urlencode 
 except ImportError:
     from urllib2 import Request, urlopen, HTTPError
