@@ -142,7 +142,7 @@ def query_params(ci_variables):
 
 
 def are_credentials_correct(ci_variables):
-    check_key_request = Request(sputnik_base_url + "api/" + provider "/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
+    check_key_request = Request(sputnik_base_url + "api/" + provider + "/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
     code = None
     try:
         response = urlopen(check_key_request)
