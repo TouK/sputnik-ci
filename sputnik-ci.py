@@ -190,6 +190,7 @@ def sputnik_ci():
                |_|
                """)
     print("Running on Python " + platform.python_version() + "\n")
+    print("Using Sputnik version " + sputnik_version + "\n")
 
     ci_variables = init_variables()
 
