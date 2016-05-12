@@ -142,7 +142,7 @@ def query_params(ci_variables):
 
 
 def are_credentials_correct(ci_variables):
-    check_key_request = Request(sputnik_base_url + "api/github/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
+    check_key_request = Request(sputnik_base_url + "api/" + provider "/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
     code = None
     try:
         response = urlopen(check_key_request)
@@ -158,7 +158,7 @@ def download_files_and_run_sputnik(ci_variables):
             logging.error("API key or build id is incorrect. Please make sure that you passed correct value to CI settings.")
             return
 
-        configs_url = sputnik_base_url + "conf/" + ci_variables.repo_slug + "/configs?" + query_params(ci_variables)
+        configs_url = sputnik_base_url + "conf/" + provider + "/" + ci_variables.repo_slug + "/configs?" + query_params(ci_variables)
         download_file(configs_url, "configs.zip")
         unzip("configs.zip")
 
