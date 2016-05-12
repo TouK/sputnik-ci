@@ -6,13 +6,18 @@ import platform
 try:
     from urllib.request import Request, urlopen, urlretrieve
     from urllib.error import HTTPError
-    from urllib.parse import urlencode 
+    from urllib.parse import urlencode
 except ImportError:
     from urllib2 import Request, urlopen, HTTPError
     from urllib import urlencode, urlretrieve
-    
-sputnik_version='1.7.2'
+
+sputnik_version='1.7.3'
 sputnik_base_url='https://sputnik.ci/'
+
+if len(sys.argv) > 1:
+    provider = sys.argv[1]
+else:
+    provider = 'github'
 
 def configure_logger():
     root = logging.getLogger()
@@ -167,24 +172,25 @@ def download_files_and_run_sputnik(ci_variables):
             sputnik_params = sputnik_params + ['--apiKey', ci_variables.api_key]
         if ci_variables.build_id is not None:
             sputnik_params = sputnik_params + ['--buildId', ci_variables.build_id]
+        sputnik_params = sputnik_params + ['--provider', provider]
         subprocess.call(['java', '-jar', 'sputnik.jar'] + sputnik_params)
 
 
 def sputnik_ci():
     configure_logger()
-    
+
     print("""
-          _____             _         _ _    
-         / ____|           | |       (_) |   
+          _____             _         _ _
+         / ____|           | |       (_) |
         | (___  _ __  _   _| |_ _ __  _| | __
          \___ \| '_ \| | | | __| '_ \| | |/ /
-         ____) | |_) | |_| | |_| | | | |   < 
+         ____) | |_) | |_| | |_| | | | |   <
         |_____/| .__/ \__,_|\__|_| |_|_|_|\_\\
-               | |                  
+               | |
                |_|
-               """)        
+               """)
     print("Running on Python " + platform.python_version() + "\n")
-    
+
     ci_variables = init_variables()
 
     if ci_variables.is_set_every_required_env():
