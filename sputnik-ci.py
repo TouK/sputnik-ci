@@ -11,7 +11,7 @@ except ImportError:
     from urllib2 import Request, urlopen, HTTPError
     from urllib import urlencode, urlretrieve
 
-sputnik_version='1.7.3'
+sputnik_version='1.7.4'
 sputnik_base_url='https://sputnik.ci/'
 
 if len(sys.argv) > 1:
