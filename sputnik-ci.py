@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-import logging, os, subprocess, sys, zipfile
-import platform
+import logging, os, subprocess, sys, zipfile, platform, re
 
 try:
     from urllib.request import Request, urlopen, urlretrieve
@@ -18,6 +17,11 @@ if len(sys.argv) > 1:
     provider = sys.argv[1]
 else:
     provider = 'github'
+
+
+if len(sys.argv) > 2:
+    sputnik_base_url = sys.argv[2]
+
 
 def configure_logger():
     root = logging.getLogger()
@@ -50,6 +54,9 @@ class CIVariables(object):
             logging.error('Stop processing as pull request has not been initiated')
         return pull_request_initiated
 
+    def __str__(self):
+        return "ci_name: " + self.ci_name + ", pr: " + self.pull_request_number + ", repo: " + self.repo_slug
+
 
 def get_env(single_env):
     try:
@@ -65,6 +72,10 @@ def detect_ci_service_name():
         return 'TRAVIS'
     elif get_env('CIRCLECI'):
         return 'CIRCLECI'
+    elif get_env('JENKINS_URL'):
+        return 'JENKINS'
+    elif get_env('GITLAB_CI'):
+        return 'GITLAB_CI'
     else:
         return None
 
@@ -108,13 +119,47 @@ def init_circleci_variables(ci_variables):
     ci_variables.build_id = get_env("CIRCLE_BUILD_NUM")
 
 
+def get_jenkins_repo_slug(git_url):
+    m = re.search(':([^\/]*)/([^\.]*)\.git', git_url)
+    return m.group(1) + '/' + m.group(2)
+
+
+def init_jenkins_variables(ci_variables):
+    ci_variables.ci = "true"
+    ci_variables.ci_name = "true"
+    git_url = get_env("GIT_URL")
+    if git_url is not None:
+        ci_variables.repo_slug = get_jenkins_repo_slug(get_env("GIT_URL"))
+    ci_variables.pull_request_number = get_env("gitlabMergeRequestId")
+    ci_variables.build_id = get_env("BUILD_ID")
+    ci_variables.job_name = get_env("JOB_NAME")
+
+
+def get_gitlabci_repo_slug(build_repo):
+    m = re.search('\@([^\/]*)\/([^\.]*)\.git', build_repo)
+    return m.group(2)
+
+
+def init_gitlabci_variables(ci_variables):
+    ci_variables.ci = "true"
+    ci_variables.ci_name = "true"
+    ci_variables.repo_slug = get_gitlabci_repo_slug(get_env("CI_BUILD_REPO"))
+    ci_variables.build_id = get_env("CI_BUILD_ID")
+    ci_variables.pull_request_number = get_env("MERGE_REQUEST_ID")
+
+
 def init_variables():
     ci_variables = CIVariables()
     ci_variables.ci_service_name = detect_ci_service_name()
+    logging.info("Detected CI " + ci_variables.ci_service_name)
     if ci_variables.ci_service_name == 'TRAVIS':
         init_travis_variables(ci_variables)
     elif ci_variables.ci_service_name == 'CIRCLECI':
         init_circleci_variables(ci_variables)
+    elif ci_variables.ci_service_name == 'JENKINS':
+        init_jenkins_variables(ci_variables)
+    elif ci_variables.ci_service_name == 'GITLAB_CI':
+        init_gitlabci_variables(ci_variables)
 
     ci_variables.api_key = get_env("sputnik_api_key")
     return ci_variables
@@ -142,6 +187,7 @@ def query_params(ci_variables):
 
 
 def are_credentials_correct(ci_variables):
+    logging.info("Checking credentials")
     check_key_request = Request(sputnik_base_url + "api/" + provider + "/" + ci_variables.repo_slug + "/credentials?" + query_params(ci_variables))
     code = None
     try:
@@ -196,6 +242,8 @@ def sputnik_ci():
 
     if ci_variables.is_set_every_required_env():
         download_files_and_run_sputnik(ci_variables)
+    elif ci_variables.pull_request_number is None:
+        logging.info("Pull/merge request not initiatied")
     else:
         logging.info("Env variables needed to run not set. Aborting.")
 
