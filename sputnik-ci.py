@@ -209,7 +209,7 @@ def download_files_and_run_sputnik(ci_variables):
         unzip("configs.zip")
 
         global sputnik_version
-        sputnik_jar_url = "http://repo1.maven.org/maven2/pl/touk/sputnik/" + sputnik_version + "/sputnik-" + sputnik_version + "-all.jar"
+        sputnik_jar_url = "https://repo1.maven.org/maven2/pl/touk/sputnik/" + sputnik_version + "/sputnik-" + sputnik_version + "-all.jar"
         logging.debug('Sputnik jar url: ' + sputnik_jar_url)
         download_file(sputnik_jar_url, "sputnik.jar")
 
